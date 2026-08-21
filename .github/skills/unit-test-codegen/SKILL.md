@@ -1,292 +1,51 @@
 ---
 name: unit-test-codegen
-description: 'Vue 3 + Vitest のユニットテストコードを生成する。Use when ユニットテストを書く、テストコードを生成する、composableのテストを作る、コンポーネントのテストを作る、と依頼されたとき。'
+description: 'Kings Valley の純粋 TypeScript ゲームロジックと Vue 3 コンポーネントの Vitest を作成・修正する。Use when ユニットテストを書く、合法手や勝敗をテストする、composableやコンポーネントのテストを追加する、と依頼されたとき。'
 ---
 
-# ユニットテストコード生成
+# Vitest テスト作成
 
-Vue 3 コンポーネントおよび composable のユニットテストを Vitest + Vue Test Utils で生成する。
+正本のルールと受け入れ基準を、独立して再現可能なテストへ落とし込む。
 
-## When to Use This Skill
+## 優先順位
 
-- 「ユニットテストを書いて」「テストコードを生成して」と依頼されたとき
-- composable や util のテストを作成するとき
-- コンポーネントのテストを作成するとき
-- 既存テストにケースを追加するとき
+1. `src/domain/` の純粋関数
+2. 対局進行を担う composable
+3. 入力、表示、アクセシビリティを持つ Vue コンポーネント
 
-## 前提技術
+ゲームルールは Vue Test Utils を使わず直接関数をテストする。DOM の統合動作は必要な範囲だけ `@vue/test-utils` で検証する。
 
-| ライブラリ | 用途 |
-|---|---|
-| Vitest | テストランナー・アサーション |
-| @vue/test-utils | コンポーネントマウント・操作 |
-| @pinia/testing | Pinia ストアのモック（使用時） |
+## 配置
 
-## テストファイル配置ルール
+- 既存の colocated test 規約があれば従う。
+- 規約がない場合は対象の近くに `<name>.spec.ts` を置く。
+- テスト名は日本語で「条件と期待結果」が分かるように書く。
 
-ソースファイルと同じディレクトリに `__tests__/` フォルダを作成し、テストを配置する。
+## 必須観点
 
-```
-src/
-├── composables/
-│   ├── useGitHubData.ts
-│   ├── useHistory.ts
-│   ├── useQuizSession.ts
-│   └── __tests__/
-│       ├── useGitHubData.spec.ts
-│       ├── useHistory.spec.ts
-│       └── useQuizSession.spec.ts
-├── components/
-│   ├── QuizQuestion.vue
-│   ├── QuizAnswer.vue
-│   └── __tests__/
-│       ├── QuizQuestion.spec.ts
-│       └── QuizAnswer.spec.ts
-└── views/
-    ├── HomeView.vue
-    └── __tests__/
-        └── HomeView.spec.ts
-```
+- 5 x 5 初期配置と中央 `{ row: 2, col: 2 }`
+- 8方向の盤端、他駒直前、隣接ブロック
+- 中央の通過・停止、王様だけが勝利すること
+- 手番外・不正手の拒否と入力不変性
+- 相手に合法手がない場合の敗北
+- 初期局面を含む同一局面3回の引き分け
+- 注入した乱数による COM の駒・方向選択
+- 選択、選択解除、矢印、入力ロック、再戦
+- accessible name、手番・終局表示
 
-## コード生成ルール
+## テスト設計
 
-### 1. テストの基本構造
+- Arrange / Act / Assert を明確にする。
+- 1テストで1つの振る舞いを検証する。
+- 盤面 builder は重複が増えた場合だけテスト helper にする。
+- `Math.random` を直接モックするより、注入した乱数関数を使う。
+- COM 待機は fake timer で制御し、各テスト後に復元する。
+- 実装詳細の private state や CSS class ではなく、公開関数、role、name、表示内容を検証する。
+- スナップショットだけで振る舞いを保証しない。
 
-```typescript
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+## 手順
 
-describe('対象の名前', () => {
-  beforeEach(() => {
-    // 各テスト前のセットアップ
-  })
-
-  it('正常系: 期待する動作の説明', () => {
-    // Arrange
-    // Act
-    // Assert
-  })
-
-  it('異常系: エラー時の動作の説明', () => {
-    // ...
-  })
-})
-```
-
-### 2. Composable のテスト
-
-composable は `@vue/test-utils` の `renderHook` もしくは `withSetup` ヘルパーでテストする。
-
-```typescript
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useHistory } from '../useHistory'
-import { flushPromises } from '@vue/test-utils'
-
-describe('useHistory', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
-  it('正解を記録できる', () => {
-    const { markCorrect, isCorrect } = useHistory()
-    markCorrect('0001')
-    expect(isCorrect('0001')).toBe(true)
-  })
-
-  it('不正解を記録できる', () => {
-    const { markIncorrect, isCorrect } = useHistory()
-    markIncorrect('0001')
-    expect(isCorrect('0001')).toBe(false)
-  })
-
-  it('履歴をクリアできる', () => {
-    const { markIncorrect, clearHistory, getHistory } = useHistory()
-    markIncorrect('0001')
-    clearHistory()
-    expect(getHistory()).toEqual({})
-  })
-})
-```
-
-### 3. コンポーネントのテスト
-
-```typescript
-import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
-import { createVuetify } from 'vuetify'
-import QuizQuestion from '../QuizQuestion.vue'
-
-const vuetify = createVuetify()
-
-function mountComponent(props = {}) {
-  return mount(QuizQuestion, {
-    props,
-    global: {
-      plugins: [vuetify],
-    },
-  })
-}
-
-describe('QuizQuestion', () => {
-  it('熟語を表示する', () => {
-    const wrapper = mountComponent({
-      questionText: 'a piece of ~ (1)',
-    })
-    expect(wrapper.text()).toContain('a piece of ~')
-  })
-
-  it('タップで回答表示イベントを発火する', async () => {
-    const wrapper = mountComponent({
-      questionText: 'a piece of ~ (1)',
-    })
-    await wrapper.trigger('click')
-    expect(wrapper.emitted('reveal')).toBeTruthy()
-  })
-})
-```
-
-### 4. 外部API呼び出しのモック
-
-GitHub API 呼び出しは `vi.mock` または `vi.spyOn` でモックする。
-
-```typescript
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useGitHubData } from '../useGitHubData'
-
-// fetch をモック
-const mockFetch = vi.fn()
-vi.stubGlobal('fetch', mockFetch)
-
-describe('useGitHubData', () => {
-  beforeEach(() => {
-    mockFetch.mockReset()
-  })
-
-  it('JSONデータを取得できる', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({
-        idioms: ['a piece of ~'],
-        means: [{ 'idiom-jp': '１つの～', 'example-sentence': '...', 'sentence-jp': '...' }],
-        notes: [],
-      }),
-    })
-
-    const { fetchIdiomData } = useGitHubData()
-    const data = await fetchIdiomData('0001')
-
-    expect(data.idioms).toEqual(['a piece of ~'])
-    expect(mockFetch).toHaveBeenCalledOnce()
-  })
-
-  it('取得失敗時にエラーをスローする', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false, status: 404 })
-
-    const { fetchIdiomData } = useGitHubData()
-    await expect(fetchIdiomData('9999')).rejects.toThrow()
-  })
-})
-```
-
-### 5. localStorage のテスト
-
-Vitest は jsdom 環境で localStorage を使用可能。テスト前に `localStorage.clear()` でリセットする。
-
-```typescript
-beforeEach(() => {
-  localStorage.clear()
-})
-```
-
-## テスト方針
-
-### テスト対象の優先度
-
-| 優先度 | 対象 | 理由 |
-|---|---|---|
-| 高 | composables (`useHistory`, `useQuizSession`) | ビジネスロジックの中核 |
-| 高 | `useGitHubData`（データ変換ロジック） | 画像パス変換、Markdown相対パス解決 |
-| 中 | コンポーネント（イベント発火・props表示） | UI動作の担保 |
-| 中 | views（バグ修正時の状態変更ロジック） | リグレッション防止 |
-| 低 | views（統合的な画面テスト） | E2Eテストでカバー可能 |
-
-### バグ修正・仕様変更時のリグレッションテスト規約
-
-**バグ修正をする際は必ず対応するテストを追加してから push すること。**
-
-#### 追加先の判断基準
-
-| バグの種類 | テスト追加先 |
-|---|---|
-| composable の計算ロジックのバグ | `src/composables/__tests__/*.spec.ts` に `it` を追加 |
-| view の状態変更ロジックのバグ | `src/views/__tests__/*.spec.ts` に `it` を追加（新規作成でも可） |
-| UI の表示/非表示・操作のバグ | `specs/<画面>/<アクション>.yaml` にシナリオ追加 → E2Eテストコードに反映 |
-
-#### view のユニットテストを書くときの注意
-
-Vuetify コンポーネントは `ResizeObserver` を使用するため、jsdom 環境ではポリフィルが必要。
-`src/test-setup.ts` に追加済みなので新たなセットアップは不要。
-
-```typescript
-// ResizeObserver は src/test-setup.ts で polyfill 済み
-// vitest.config.ts の setupFiles に登録されている
-```
-
-ボタンの特定には `.findAll('button').find(b => b.text().includes('ボタン名'))` を使用する。
-
-```typescript
-import { mount, flushPromises } from '@vue/test-utils'
-import { createVuetify } from 'vuetify'
-import SomeView from '../SomeView.vue'
-
-const vuetify = createVuetify()
-// vue-router をモック
-vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
-}))
-
-it('バグ修正のリグレッションテスト', async () => {
-  // localStorage に前提データをセット
-  localStorage.setItem('key', JSON.stringify(data))
-
-  const wrapper = mount(SomeView, { global: { plugins: [vuetify] } })
-  await flushPromises()  // onMounted の完了を待つ
-
-  const btn = wrapper.findAll('button').find(b => b.text().includes('ボタン名'))
-  await btn!.trigger('click')
-
-  // localStorage や emitted イベントで結果を検証
-  const saved = JSON.parse(localStorage.getItem('key')!)
-  expect(saved.someField).toBe(expectedValue)
-})
-```
-
-#### テストコメントの書き方
-
-リグレッションテストであることを明示するコメントを付ける。
-
-```typescript
-/**
- * リグレッションテスト:
- * 〈再現手順の一行説明〉というバグの防止
- */
-it('...', async () => { ... })
-```
-
-### テスト命名規則
-
-- `describe`: 対象の名前（関数名 or コンポーネント名）
-- `it`: 「〜する」「〜できる」の形式で日本語で記述
-
-```typescript
-describe('useHistory', () => {
-  it('正解を記録できる', () => { ... })
-  it('最新の回答で上書きされる', () => { ... })
-  it('指定範囲の履歴をクリアできる', () => { ... })
-})
-```
-
-### カバレッジ目標
-
-- composables: 90% 以上
-- コンポーネント: 主要なユーザー操作パスをカバー
-- views: 基本的なレンダリング確認のみ
+1. `docs/product-requirements.md` と対象コードを読む。
+2. 先に失敗する最小テストを追加する。
+3. `unit-test-runner` で対象ファイルだけ実行する。
+4. 実装修正後に対象テスト、関連テスト、全単体テストの順で確認する。

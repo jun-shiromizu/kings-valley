@@ -1,88 +1,38 @@
 ---
 name: delivery-flow
-description: '修正・Issue対応・feature branch・コミット・PR・push・本番反映の依頼を最初に整理し、適切なブランチ運用とスキルへ振り分ける入口スキル。Use when Issueに対応する、feature branchで作業する、mainで修正してと言われる、コミットだけしたい、PRだけ作りたい、pushしたい、レビューに出したい、デプロイしたい、と依頼されたとき。'
+description: 'Issue対応、実装、ブランチ、コミット、PR、push、GitHub Pages反映の依頼を整理して適切な Skill へ振り分ける。Use when Issueに対応する、機能を実装してPRにする、コミットする、レビューに出す、デプロイする、と依頼されたとき。'
 ---
 
-# 全体運用フロー
+# 開発・配布フロー
 
-このスキルは、修正依頼や Issue 対応依頼を受けたときに、現在の git 状態と依頼内容を整理して、適切な次のスキルや手順へ振り分ける入口スキル。
+依頼の範囲と Git の現在状態を確認し、必要な専門 Skill を順に使用する。
 
-## 役割
+## 最初の確認
 
-- 依頼が実装なのか、コミット / PR なのか、デプロイなのかを切り分ける
-- `main` 直 push 禁止の前提を最初に確認する
-- ユーザーがすでに作った feature branch を尊重する
-- Issue 番号がある依頼では、その番号をブランチ名や PR に反映する
+1. 依頼が調査、実装、テスト、コミット、PR、デプロイのどこまでを含むか確認する。
+2. 現在のブランチ、作業ツリー、リモート、既存 PR を確認する。
+3. ユーザー指定のブランチ、Issue 番号、未コミット差分を尊重する。
+4. `docs/product-requirements.md` に関わる変更では、要件と実装を照合する。
 
-## 最初に必ず確認すること
+## 振り分け
 
-1. 現在のブランチは何か
-2. 作業ツリーは clean か
-3. `main` への直接 push が禁止される前提か
-4. ユーザーがすでに branch を切っているか
-5. Issue 番号があるか
+| 作業 | Skill |
+| --- | --- |
+| Vue 画面、ルーター、状態管理 | `vue-dev` |
+| 盤面、合法手、終局、COM | `game-logic-dev` |
+| Vitest の追加・修正 | `unit-test-codegen` |
+| Vitest の実行 | `unit-test-runner` |
+| E2E 仕様、実装、実行、報告 | `e2e-spec-writer`, `e2e-codegen`, `e2e-runner`, `e2e-reporter` |
+| コミット、push、PR | `commit-and-pr` |
+| Pages workflow、公開、確認 | `deploy` |
 
-確認コマンド例:
+## 標準フロー
 
-```bash
-git branch --show-current
-git fetch origin
-git status -sb
-```
+1. Issue または要件から受け入れ条件を特定する。
+2. 既存ブランチを使うか、依頼に合う作業ブランチを作る。
+3. 実装し、リスクに応じた単体テストと E2E テストを追加する。
+4. 型チェック、Lint、テスト、ビルドを実行する。
+5. 明示的に依頼されている場合はコミット、push、PR 作成へ進む。
+6. `main` 反映後の Pages 公開依頼では workflow と本番動作を確認する。
 
-## 基本ルール
-
-- `main` にいるからといって、そのまま修正して push しない
-- ユーザーが `main で雑に push して` と言っても、branch protection に従ってブランチと PR に切り替える
-- すでに feature branch があるなら、その branch を使う
-- すでに修正済みなら、不要な再実装やブランチ切り直しをしない
-
-## 分岐ルール
-
-### A. 「Issue #999 に対応して」「機能修正して」
-
-- 実装作業に入る
-- 実装には `vue-dev` を使う
-- テストが必要なら `unit-test-codegen` / `unit-test-runner` / `e2e-*` を使う
-- 完了後は `commit-and-pr` スキルの流れへ進む
-
-### B. 「feature branch は自分で作った」「コミットと PR だけやって」
-
-- 既存ブランチをそのまま使う
-- 未コミット差分と検証状況を確認する
-- `commit-and-pr` スキルを使って、日本語コミットメッセージ作成、コミット、PR 作成へ進む
-
-### C. 「main ブランチで、雑に ●● に対応して push して」
-
-- そのまま `main` に push しない
-- `main` の状態を確認し、必要なら作業ブランチを切る
-- 実装後は `commit-and-pr` スキルで PR まで進める
-
-### D. 「本番に反映して」「GitHub Pages にデプロイして」
-
-- まず変更が `main` に入っているか確認する
-- `main` に未反映なら先に PR / マージまで案内または実施する
-- `main` 反映済みなら `deploy` スキルで手動デプロイへ進む
-
-## Issue 番号の扱い
-
-- Issue 番号がある場合は、可能なら branch 名・コミット・PR で追跡できるようにする
-- 例:
-  - branch: `fix/issue-999-theme-bug`
-  - PR 本文: `Issue #999 に対応`
-
-## 呼び出し先の目安
-
-- 実装: `vue-dev`
-- ユニットテスト追加: `unit-test-codegen`
-- ユニットテスト実行: `unit-test-runner`
-- E2E 仕様 / コード / 実行: `e2e-spec-writer`, `e2e-codegen`, `e2e-runner`
-- コミット / PR: `commit-and-pr`
-- デプロイ: `deploy`
-
-## このスキルで期待する判断
-
-- 依頼がどれだけ雑でも、最初に git 状態と branch protection 前提を確認する
-- `main` 直 push の指示をそのまま実行しない
-- 既存の feature branch や Issue 情報を見落とさない
-- 最後に適切な専門スキルへ渡す
+ブランチ保護や required check は GitHub 上の実設定を確認して従い、存在を推測しない。すでに完了している工程は繰り返さない。

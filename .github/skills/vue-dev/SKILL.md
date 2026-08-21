@@ -1,265 +1,59 @@
 ---
 name: vue-dev
-description: 'このプロジェクト（英熟語暗記アプリ）の Vue 3 実装ガイドライン。Use when 実装する、コードを書く、composableを作る、コンポーネントを作る、config を設定する、と依頼されたとき。'
+description: 'Kings Valley の Vue 3 画面、コンポーネント、ルーター、対局状態を実装・修正する。Use when Vueを実装する、トップページやゲーム画面を作る、盤面UIや操作を追加する、configを設定する、と依頼されたとき。'
 ---
 
-# Vue 3 実装ガイドライン
+# Vue 3 実装
 
-英熟語暗記アプリ（Vue 3 + Vuetify）の実装規約。このスキルは実装作業の全般で参照すること。
+Vue 3、TypeScript、Vite、Composition API、Vue Router で Kings Valley を実装する。
 
-## プロジェクト構成
+## 正本
 
-```
+`docs/product-requirements.md` を先に読み、画面、操作、アクセシビリティ、終局、再読み込みの要件を受け入れ条件にする。ゲームルールの実装では `game-logic-dev` を併用する。
+
+## 構成の目安
+
+```text
 src/
+├── domain/           # Vue に依存しない型、盤面、合法手、終局、COM
+├── composables/      # 対局進行と UI 状態の調停
+├── components/       # 盤面、駒、方向、手番、終局表示
+├── views/            # TopView、GameView
+├── router/           # #/、#/game、fallback
+├── assets/
 ├── App.vue
-├── main.ts
-├── router/
-│   └── index.ts
-├── views/
-│   ├── HomeView.vue          … トップページ（設定フォーム・履歴クリア）
-│   ├── QuizView.vue          … 出題画面
-│   └── ResultView.vue        … 結果サマリー画面
-├── components/
-│   ├── QuizQuestion.vue      … 問題表示（タップで回答表示に切替）
-│   ├── QuizAnswer.vue        … 回答表示（正解/不正解ボタン・スワイプ）
-│   ├── ProgressBar.vue       … 進捗インジケーター（n / total）
-│   └── SupplementContent.vue … 補足 Markdown → HTML 表示
-├── composables/
-│   ├── useGitHubData.ts      … GitHub API / Raw URL データ取得
-│   ├── useQuizSession.ts     … セッション管理・出題順生成
-│   └── useHistory.ts         … 正解/不正解履歴（localStorage）
-├── types/
-│   └── index.ts              … 型定義
-└── config.ts                 … GitHub リポジトリ設定値
+└── main.ts
 ```
 
-## config.ts の設計
+既存構成がある場合は、名前を機械的に合わせず責務の境界を維持する。
 
-```typescript
-// src/config.ts
-export const GITHUB_OWNER = 'jun-shiromizu'
-export const DATA_REPO = 'english-idiom-target-1000-data'
-export const DATA_BRANCH = 'main'
+## 実装原則
 
-export const GITHUB_API_BASE = `https://api.github.com/repos/${GITHUB_OWNER}/${DATA_REPO}/contents`
-export const GITHUB_RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${DATA_REPO}/${DATA_BRANCH}`
-```
+- `<script setup lang="ts">` と厳格な型を使い、`any` を避ける。
+- 盤面計算、勝敗、反復、COM 選択をコンポーネント内に実装しない。
+- composable は domain の純粋関数を呼び、選択中の駒、入力ロック、COM 待機、画面表示を管理する。
+- タイマーは破棄時と再戦時に解除し、終局後の COM 着手を防ぐ。
+- 対局状態はメモリだけに保持し、localStorage、外部 API、認証を追加しない。
+- `/game` を直接開いた場合や再読み込み時はトップへ戻す。
+- Router は `createWebHashHistory(import.meta.env.BASE_URL)` を使う。
 
-## 型定義（src/types/index.ts）
+## UI と操作
 
-```typescript
-export interface IdiomData {
-  idioms: string[]
-  means: Mean[]
-  notes: string[]
-}
+- 盤面は CSS Grid の5 x 5、正方形、レスポンシブな安定寸法にする。
+- プレイヤーを常に手前、COM を奥へ表示する。
+- 陣営、王様、兵士、選択、中央、手番を色だけに依存せず識別可能にする。
+- 駒と移動方向は semantic button とし、明確な accessible name を付ける。
+- 合法な方向だけを矢印で示し、クリック、タップ、キーボードで同じ操作を行えるようにする。
+- COM 手番、移動中、終局後は競合する入力を無効にする。
+- 終局結果は dialog 相当として通知し、「もう一度」と「トップページ」を提供する。
+- `aria-live` で手番、COM 思考中、終局を通知する。
+- `prefers-reduced-motion` ではアニメーションを抑える。
+- 320px 以上で文字、矢印、駒、結果表示の重なりと横スクロールがないことを確認する。
 
-export interface Mean {
-  'idiom-jp': string
-  synonyms?: string[]
-  'example-sentence': string
-  'sentence-jp': string
-}
+## 進め方
 
-export type QuizMode = 'idiom' | 'sentence'
-export type QuizTarget = 'all' | 'incorrect'
-export type QuizOrder = 'sequential' | 'random'
-
-export interface QuizSettings {
-  startNumber: number
-  endNumber: number
-  mode: QuizMode
-  target: QuizTarget
-  order: QuizOrder
-}
-
-export interface QuizItem {
-  number: string         // 4桁ゼロ埋め "0001"
-  idiomData: IdiomData
-  questionText: string   // 出題テキスト
-  idiomIndex: number     // idioms 配列のインデックス（複数熟語対応）
-  meanIndex?: number     // 例文出題時の means インデックス
-  supplementHtml: string[] // 補足 Markdown を変換した HTML 文字列の配列
-}
-
-export interface QuizSession {
-  settings: QuizSettings
-  items: QuizItem[]
-  currentIndex: number
-  results: Record<number, boolean> // QuizItem インデックス → 正解/不正解
-}
-```
-
-## useGitHubData の設計
-
-```typescript
-// src/composables/useGitHubData.ts
-export function useGitHubData() {
-  // GitHub Contents API でディレクトリ一覧取得
-  async function listFiles(path: string): Promise<string[]>
-
-  // Raw URL でファイル内容取得
-  async function fetchRaw(path: string): Promise<string>
-
-  // 指定番号の IdiomData を取得
-  async function fetchIdiomData(number: string): Promise<IdiomData>
-
-  // 指定番号の補足 Markdown ファイル一覧を取得し HTML に変換
-  async function fetchSupplements(number: string): Promise<string[]>
-}
-```
-
-### 画像パス変換ルール
-
-補足 Markdown 内の相対画像パスをアプリ表示用に変換する：
-
-```typescript
-// ./img/1234-bar-foo.png → Raw URL フルパスに変換
-function resolveImagePaths(markdown: string, number: string): string {
-  return markdown.replace(
-    /!\[([^\]]*)\]\(\.\/img\/([^)]+)\)/g,
-    (_, alt, filename) =>
-      `![${alt}](${GITHUB_RAW_BASE}/img/${filename})`
-  )
-}
-```
-
-### ファイル番号フォーマット
-
-```typescript
-// 数値を4桁ゼロ埋め文字列に変換
-function formatNumber(n: number): string {
-  return String(n).padStart(4, '0')
-}
-```
-
-## useHistory の設計
-
-localStorage のキー: `idiom-app-history`
-
-```typescript
-// src/composables/useHistory.ts
-
-// 保存形式: Record<string, boolean>
-// キー: "{number}" または "{number}-{idiomIndex}"（複数熟語の場合）
-// 値: true=正解, false=不正解
-
-export function useHistory() {
-  function getHistory(): Record<string, boolean>
-  function setResult(number: string, idiomIndex: number, correct: boolean): void
-  function isIncorrect(number: string, idiomIndex: number): boolean
-  function clearAll(): void
-  function clearRange(start: number, end: number): void
-}
-```
-
-## useQuizSession の設計
-
-localStorage のキー: `idiom-app-session`
-
-```typescript
-// src/composables/useQuizSession.ts
-export function useQuizSession() {
-  // 設定と IdiomData 配列から QuizItem[] を生成
-  function buildItems(settings: QuizSettings, dataMap: Map<string, IdiomData>): QuizItem[]
-
-  // セッションを localStorage に保存
-  function saveSession(session: QuizSession): void
-
-  // 保存済みセッションを復元
-  function loadSession(): QuizSession | null
-
-  // セッションをクリア
-  function clearSession(): void
-}
-```
-
-### 出題リスト生成ロジック
-
-1. 範囲内の全熟語データから `QuizItem[]` を生成
-   - `mode: 'idiom'` の場合: 熟語が複数あれば **idioms 配列分** に展開
-   - `mode: 'sentence'` の場合: means 配列分に展開
-2. `target: 'incorrect'` の場合: `useHistory` で最新回答が不正解のものだけ残す
-3. `order: 'random'` の場合: Fisher-Yates シャッフルを適用
-
-## QuizQuestion コンポーネント
-
-```typescript
-// Props
-interface Props {
-  questionText: string  // 出題テキスト（例: "a piece of ~ (1)"）
-}
-// Emits
-// 'reveal' — タップ/クリックで回答表示を要求
-```
-
-## QuizAnswer コンポーネント
-
-```typescript
-// Props
-interface Props {
-  item: QuizItem
-}
-// Emits
-// 'correct'   — 正解ボタン or 右スワイプ
-// 'incorrect' — 不正解ボタン or 左スワイプ
-```
-
-### スワイプ検出（モバイル）
-
-```typescript
-// touch イベントで実装（外部ライブラリ不使用）
-let startX = 0
-function onTouchStart(e: TouchEvent) { startX = e.touches[0].clientX }
-function onTouchEnd(e: TouchEvent) {
-  const diff = e.changedTouches[0].clientX - startX
-  if (diff > 50) emit('correct')
-  else if (diff < -50) emit('incorrect')
-}
-```
-
-## Vuetify の使い方
-
-- UI コンポーネント・スタイリングは **Vuetify を主軸** とする
-- Tailwind CSS は使用しない
-- よく使うコンポーネント:
-  - フォーム: `v-select`, `v-text-field`, `v-btn`, `v-switch`
-  - レイアウト: `v-container`, `v-row`, `v-col`
-  - カード: `v-card`, `v-card-title`, `v-card-text`, `v-card-actions`
-  - ダイアログ: `v-dialog`
-  - 進捗: `v-progress-linear`
-
-## ルーター設定
-
-```typescript
-// src/router/index.ts
-const routes = [
-  { path: '/', name: 'home', component: HomeView },
-  { path: '/quiz', name: 'quiz', component: QuizView },
-  { path: '/result', name: 'result', component: ResultView },
-]
-```
-
-- `QuizView` にはセッションデータが必要。直接アクセス時は `/` にリダイレクト
-- `ResultView` にも結果データが必要。直接アクセス時は `/` にリダイレクト
-
-## GitHub Pages 向けの注意
-
-Vite の `base` 設定をリポジトリ名に合わせる：
-
-```typescript
-// vite.config.ts
-export default defineConfig({
-  base: '/english-idiom-target-1000/',
-  // ...
-})
-```
-
-Vue Router は `createWebHashHistory` を使用する（GitHub Pages は SPA のサーバーサイドルーティングに対応していないため）：
-
-```typescript
-const router = createRouter({
-  history: createWebHashHistory(import.meta.env.BASE_URL),
-  routes,
-})
-```
+1. 対象要件と既存実装・近接テストを確認する。
+2. domain と UI のどちらが責務を持つか決め、最小変更を実装する。
+3. `unit-test-codegen` でロジックまたはコンポーネントのテストを追加する。
+4. 必要な主要導線は `e2e-spec-writer` と `e2e-codegen` で追加する。
+5. 型チェック、Lint、単体テスト、E2E、ビルドを対象範囲に応じて実行する。
