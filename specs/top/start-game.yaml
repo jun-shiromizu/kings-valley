@@ -1,0 +1,32 @@
+title: プレイヤーが手番順を選んで対局を開始する
+source: docs/product-requirements.md FR-01
+scenarios:
+  - id: TOP-START-001
+    name: 先手を選んで開始する
+    precondition: トップページを表示している
+    steps:
+      - action: 先手を選択する
+      - action: ゲームスタートを実行する
+    expect:
+      - ゲームページが表示される
+      - プレイヤーの手番と表示される
+
+  - id: TOP-START-002
+    name: 後手を選んで開始する
+    precondition: トップページを表示している
+    steps:
+      - action: 後手を選択する
+      - action: ゲームスタートを実行する
+    expect:
+      - ゲームページが表示される
+      - COM が先手と表示される
+
+  - id: TOP-START-003
+    name: ランダム設定で有効な先手を生成する
+    precondition: トップページを表示している
+    steps:
+      - action: ランダムを選択する
+      - action: ゲームスタートを実行する
+    expect:
+      - ゲームページが表示される
+      - プレイヤーまたは COM のどちらかが先手と表示される

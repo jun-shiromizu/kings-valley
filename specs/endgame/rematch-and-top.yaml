@@ -1,0 +1,36 @@
+title: 対局終了後に再戦またはトップページへ移動する
+source: docs/product-requirements.md FR-06, FR-07
+scenarios:
+  - id: ENDGAME-NAV-001
+    name: ゲーム画面からトップページへ戻る
+    precondition: 対局中のゲームページを表示している
+    steps:
+      - action: トップページへ戻るを選択する
+    expect:
+      - トップページが表示される
+      - 対局状態が破棄される
+
+  - id: ENDGAME-NAV-002
+    name: ゲーム画面から再戦する
+    precondition: 対局中のゲームページを表示している
+    steps:
+      - action: もう一度遊ぶを選択する
+    expect:
+      - 初期盤面のゲームが表示される
+
+  - id: ENDGAME-STATE-001
+    name: 再読み込みで対局を破棄する
+    precondition: 対局中のゲームページを表示している
+    steps:
+      - action: ゲームページを再読み込みする
+    expect:
+      - トップページが表示される
+      - 対局状態が復元されない
+
+  - id: ENDGAME-STATE-002
+    name: 未定義ルートからトップページへ戻る
+    precondition: アプリを表示できる
+    steps:
+      - action: 未定義のルートへ移動する
+    expect:
+      - トップページが表示される

@@ -4,7 +4,7 @@
 
 ## 開発状況
 
-現在は要件策定段階です。アプリ本体、テスト、デプロイ設定は今後実装します。
+初期リリースのアプリ本体、単体テスト、E2E テスト、GitHub Pages デプロイ設定を実装済みです。
 
 プロダクト要件の正本は [docs/product-requirements.md](docs/product-requirements.md) です。初期案は [docs/spec.md](docs/spec.md) に残しています。記述が異なる場合は、プロダクト要件を優先します。
 
@@ -44,18 +44,19 @@
 
 ## セットアップ
 
-アプリ実装後は、Node.js の Active LTS と npm を前提に次のコマンドで開発できる構成とします。
+Node.js 22 以降と npm を前提に、次のコマンドで開発できます。
 
 ```sh
 npm install
 npm run dev
 ```
 
-品質確認用のコマンドは次の構成とします。現時点ではアプリ本体が未実装のため、まだ実行できません。
+品質確認用のコマンドは次のとおりです。
 
 ```sh
 npm run type-check
 npm run lint
+npm run format:check
 npm run test:unit
 npm run test:e2e
 npm run build
@@ -63,7 +64,7 @@ npm run build
 
 ## デプロイ
 
-`main` ブランチへ反映された内容を GitHub Actions でビルドし、GitHub Pages へデプロイする予定です。Vite の公開ベースパスにはリポジトリ名 `/kings-valley/` を使用します。
+`main` ブランチへの push または手動実行を契機に、GitHub Actions が型チェック、Lint、単体テスト、ビルドを行い、GitHub Pages へデプロイします。Vite の公開ベースパスにはリポジトリ名 `/kings-valley/` を使用します。
 
 ## ドキュメント
 

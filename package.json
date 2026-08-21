@@ -1,0 +1,40 @@
+{
+  "name": "kings-valley",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "type-check": "vue-tsc --noEmit",
+    "lint": "eslint .",
+    "test:unit": "vitest run",
+    "format:check": "prettier --check \"src/**/*.{ts,vue}\" \"tests/**/*.ts\" \"specs/**/*.yaml\" \"*.{ts,json}\"",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@vitejs/plugin-vue": "latest",
+    "lucide-vue-next": "latest",
+    "vite": "latest",
+    "vue": "latest",
+    "vue-router": "latest"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "latest",
+    "@types/node": "latest",
+    "@vue/test-utils": "latest",
+    "eslint": "latest",
+    "eslint-plugin-vue": "latest",
+    "jiti": "^2.7.0",
+    "jsdom": "latest",
+    "prettier": "^3.9.6",
+    "typescript": "~5.7.3",
+    "typescript-eslint": "^8.67.0",
+    "vite": "latest",
+    "vitest": "latest",
+    "vue-eslint-parser": "^10.4.1",
+    "vue-tsc": "latest"
+  }
+}

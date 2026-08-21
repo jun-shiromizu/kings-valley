@@ -1,0 +1,23 @@
+title: プレイヤーが駒を選び、COM と交互に着手する
+source: docs/product-requirements.md FR-02, FR-03, FR-04, FR-05
+scenarios:
+  - id: GAME-MOVE-001
+    name: 合法方向を選んでプレイヤーの駒を動かす
+    precondition: 先手でゲームページを表示している
+    steps:
+      - action: プレイヤーの王様を選択する
+      - action: 表示された合法方向のいずれかを選択する
+    expect:
+      - 選択中の駒が移動する
+      - COM が自動で着手する
+      - プレイヤーへ手番が戻る
+
+  - id: GAME-ACCESS-001
+    name: キーボードで駒を選び移動する
+    precondition: 先手でゲームページを表示している
+    steps:
+      - action: キーボードでプレイヤーの王様にフォーカスして選択する
+      - action: キーボードで合法方向を選択する
+    expect:
+      - プレイヤーの駒が移動する
+      - COM の着手後にプレイヤーへ手番が戻る
