@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import GameBoard from './GameBoard.vue'
 import { createInitialState, findPiece, getLegalMovesForPiece } from '../domain'
 
@@ -28,25 +28,25 @@ describe('GameBoard', () => {
 
     expect(wrapper.findAll('[role="gridcell"]')).toHaveLength(25)
     expect(wrapper.findAll('.piece')).toHaveLength(10)
-    expect(wrapper.get('[aria-label="2行2列 中央"]')).toBeDefined()
-    expect(wrapper.get('[aria-label="あなたの王様"]')).toBeDefined()
-    expect(wrapper.get('[aria-label="COMの王様"]')).toBeDefined()
+    expect(wrapper.get('[aria-label="2行2列 中央"]').exists()).toBe(true)
+    expect(wrapper.get('[aria-label="あなたの王様"]').exists()).toBe(true)
+    expect(wrapper.get('[aria-label="COMの王様"]').exists()).toBe(true)
   })
 
-  it('プレイヤー駒の選択を通知し、COM 駒は操作できない', async () => {
-    const { state } = createProps()
-    const wrapper = mount(GameBoard, {
-      props: {
-        state,
-        selectedPieceId: null,
-        selectedMoves: [],
-        disabled: false,
-      },
-    })
+  it('プレイヤー駒の選択を parent host 経由で通知し、COM 駒は操作できない', async () => {
+    const { state, humanKing } = createProps()
+    const onSelect = vi.fn()
+    const Host = {
+      components: { GameBoard },
+      setup: () => ({ onSelect, state }),
+      template: '<GameBoard :state="state" :selected-piece-id="null" :selected-moves="[]" :disabled="false" @select="onSelect" />',
+    }
+    const wrapper = mount(Host)
 
     await wrapper.get('[aria-label="あなたの王様"]').trigger('click')
 
-    expect(wrapper.emitted('select')).toHaveLength(1)
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(onSelect).toHaveBeenCalledWith(humanKing)
     expect(wrapper.get('[aria-label="COMの王様"]').attributes('disabled')).toBeDefined()
   })
 
@@ -64,6 +64,23 @@ describe('GameBoard', () => {
     const arrows = wrapper.findAll('.move-arrow')
     expect(arrows).toHaveLength(selectedMoves.length)
     expect(arrows.every((arrow) => arrow.attributes('aria-label')?.endsWith('へ移動'))).toBe(true)
+  })
+
+  it('方向ボタンの操作を parent host 経由で通知する', async () => {
+    const { state, humanKing, selectedMoves } = createProps()
+    const onMove = vi.fn()
+    const Host = {
+      components: { GameBoard },
+      setup: () => ({ onMove, state, humanKing, selectedMoves }),
+      template:
+        '<GameBoard :state="state" :selected-piece-id="humanKing.id" :selected-moves="selectedMoves" :disabled="false" @move="onMove" />',
+    }
+    const wrapper = mount(Host)
+
+    await wrapper.get('[aria-label="northへ移動"]').trigger('click')
+
+    expect(onMove).toHaveBeenCalledTimes(1)
+    expect(onMove).toHaveBeenCalledWith(selectedMoves[0])
   })
 
   it('disabled 状態では駒と方向ボタンを操作できない', () => {

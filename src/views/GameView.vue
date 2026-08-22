@@ -12,7 +12,12 @@ const session = useGameSession()
 const state = computed(() => session.state.value)
 
 onMounted(() => {
-  if (!hasActiveSession()) void router.replace('/')
+  if (!hasActiveSession()) {
+    void router.replace('/')
+    return
+  }
+
+  session.activateComTurn()
 })
 
 const toTop = async () => {

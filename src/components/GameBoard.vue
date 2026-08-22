@@ -53,6 +53,7 @@ const pieceLabel = (piece: Piece) => `${piece.owner === 'human' ? 'あなた' : 
               { 'piece--selected': selectedPieceId === pieceAt(row - 1, col - 1)?.id },
             ]"
             type="button"
+            :data-piece-id="pieceAt(row - 1, col - 1)?.id"
             :disabled="disabled || pieceAt(row - 1, col - 1)?.owner !== 'human'"
             :aria-label="`${pieceLabel(pieceAt(row - 1, col - 1)!)}${selectedPieceId === pieceAt(row - 1, col - 1)?.id ? ' 選択中' : ''}`"
             @click="emit('select', pieceAt(row - 1, col - 1)!)"

@@ -23,7 +23,7 @@ test('ENDGAME-NAV-002 ゲーム画面から再戦する', async ({ page }) => {
   await expect(page.getByText('あなたの手番')).toBeVisible()
 })
 
-test('ENDGAME-STATE-001 再読み込みで対局を破棄する', async ({ page }) => {
+test('ENDGAME-NAV-004 進行中のゲームを再読み込みするとトップページへ戻る', async ({ page }) => {
   await startGame(page)
   await page.reload()
 
@@ -31,8 +31,8 @@ test('ENDGAME-STATE-001 再読み込みで対局を破棄する', async ({ page 
   await expect(page.getByRole('button', { name: 'ゲームスタート' })).toBeVisible()
 })
 
-test('ENDGAME-STATE-002 未定義ルートからトップページへ戻る', async ({ page }) => {
-  await page.goto('./#/not-found')
+test('ENDGAME-NAV-005 未定義ルートにアクセスするとトップページへ戻る', async ({ page }) => {
+  await page.goto('./#/unknown-route')
 
   await expect(page).toHaveURL(/#\/$/)
   await expect(page.getByRole('button', { name: 'ゲームスタート' })).toBeVisible()

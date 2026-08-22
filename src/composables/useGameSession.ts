@@ -16,17 +16,33 @@ const clearComTimer = () => {
 }
 
 const scheduleComMove = () => {
-  clearComTimer()
-  if (!state.value || state.value.result.status !== 'playing' || state.value.currentPlayer !== 'com') return
+  if (!state.value || state.value.result.status !== 'playing' || state.value.currentPlayer !== 'com' || comTimer !== undefined) return
+
   isBusy.value = true
   comTimer = setTimeout(() => {
-    if (!state.value || state.value.result.status !== 'playing' || state.value.currentPlayer !== 'com') return
-    const move = chooseRandomMove(state.value, 'com')
+    comTimer = undefined
+
+    if (!state.value || state.value.result.status !== 'playing' || state.value.currentPlayer !== 'com') {
+      isBusy.value = false
+      return
+    }
+
+    const move = chooseRandomMove(state.value, 'com', randomSource)
     if (move) state.value = advanceGame(state.value, move)
     else state.value = { ...state.value, result: { status: 'lost', winner: 'human', loser: 'com' } }
+
     isBusy.value = false
-    comTimer = undefined
   }, 500)
+}
+
+const activateComTurn = () => {
+  if (!state.value || state.value.result.status !== 'playing') {
+    isBusy.value = false
+    return
+  }
+
+  if (state.value.currentPlayer === 'com') scheduleComMove()
+  else isBusy.value = false
 }
 
 const start = (turnOrder: TurnOrder, random: () => number = Math.random) => {
@@ -35,7 +51,6 @@ const start = (turnOrder: TurnOrder, random: () => number = Math.random) => {
   isBusy.value = false
   randomSource = random
   state.value = createInitialState(turnOrder, randomSource)
-  scheduleComMove()
 }
 
 const selectPiece = (piece: Piece) => {
@@ -63,18 +78,23 @@ const moveSelectedPiece = (move: Move) => {
   if (move.pieceId !== selectedPieceId.value) return
   state.value = advanceGame(state.value, move)
   selectedPieceId.value = null
-  scheduleComMove()
+  activateComTurn()
 }
 
 const rematch = () => {
   if (!state.value) return
   start(state.value.turnOrder, randomSource)
+  activateComTurn()
 }
 
-const dispose = () => clearComTimer()
+const dispose = () => {
+  clearComTimer()
+  isBusy.value = false
+}
 
 export const useGameSession = () => {
   onUnmounted(dispose)
+
   return {
     state,
     selectedPiece,
@@ -82,6 +102,7 @@ export const useGameSession = () => {
     selectedMoves,
     isBusy,
     start,
+    activateComTurn,
     selectPiece,
     moveSelectedPiece,
     rematch,

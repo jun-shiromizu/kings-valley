@@ -1,6 +1,6 @@
 import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import GameResultDialog from './GameResultDialog.vue'
 
 describe('GameResultDialog', () => {
@@ -29,15 +29,25 @@ describe('GameResultDialog', () => {
     expect(document.activeElement).toBe(wrapper.get('[role="dialog"]').element)
   })
 
-  it('再戦とトップページの操作を emit する', async () => {
-    const wrapper = mount(GameResultDialog, {
-      props: { result: { status: 'draw', reason: 'repetition' } },
-    })
+  it('再戦とトップページの操作を parent host 経由で通知する', async () => {
+    const onRematch = vi.fn()
+    const onTop = vi.fn()
+    const Host = {
+      components: { GameResultDialog },
+      setup: () => ({
+        onRematch,
+        onTop,
+        result: { status: 'draw', reason: 'repetition' } as const,
+      }),
+      template: '<GameResultDialog :result="result" @rematch="onRematch" @top="onTop" />',
+    }
 
-    await wrapper.get('button').trigger('click')
-    await wrapper.findAll('button')[1].trigger('click')
+    const wrapper = mount(Host)
+    const buttons = wrapper.findAll('button')
+    await buttons[0]!.trigger('click')
+    await buttons[1]!.trigger('click')
 
-    expect(wrapper.emitted('rematch')).toHaveLength(1)
-    expect(wrapper.emitted('top')).toHaveLength(1)
+    expect(onRematch).toHaveBeenCalledTimes(1)
+    expect(onTop).toHaveBeenCalledTimes(1)
   })
 })
