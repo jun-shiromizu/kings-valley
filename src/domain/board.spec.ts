@@ -18,11 +18,16 @@ describe('board', () => {
     expect(resolveStartedPlayer('random', () => 0.5)).toBe('com')
   })
 
-  it('初期局面を反復回数1で作る', () => {
+  it('easy を初期難易度として初期局面を反復回数1で作る', () => {
     const state = createInitialState('human-first')
     expect(state.currentPlayer).toBe('human')
+    expect(state.difficulty).toBe('easy')
     expect(Object.values(state.positionCounts)).toEqual([1])
     expect(state.result).toEqual({ status: 'playing' })
+  })
+
+  it.each(['easy', 'normal', 'hard'] as const)('指定した難易度 %s を初期局面に保持する', (difficulty) => {
+    expect(createInitialState('human-first', difficulty).difficulty).toBe(difficulty)
   })
 
   it('中央マスを判定する', () => {

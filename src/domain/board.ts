@@ -1,5 +1,5 @@
 import { BOARD_SIZE, CENTER, DIRECTIONS } from './constants'
-import type { GameState, Piece, Player, TurnOrder } from './types'
+import type { Difficulty, GameState, Piece, Player, TurnOrder } from './types'
 import { positionKey } from './position-key'
 
 export { CENTER }
@@ -25,13 +25,20 @@ export const resolveStartedPlayer = (turnOrder: TurnOrder, random: () => number 
   return random() < 0.5 ? 'human' : 'com'
 }
 
-export const createInitialState = (turnOrder: TurnOrder, random: () => number = Math.random): GameState => {
-  const startedPlayer = resolveStartedPlayer(turnOrder, random)
+export const createInitialState = (
+  turnOrder: TurnOrder,
+  difficultyOrRandom: Difficulty | (() => number) = 'easy',
+  random: () => number = Math.random,
+): GameState => {
+  const difficulty = typeof difficultyOrRandom === 'function' ? 'easy' : difficultyOrRandom
+  const randomSource = typeof difficultyOrRandom === 'function' ? difficultyOrRandom : random
+  const startedPlayer = resolveStartedPlayer(turnOrder, randomSource)
   const pieces = createInitialPieces()
   const stateWithoutCounts: Omit<GameState, 'positionCounts'> = {
     pieces,
     currentPlayer: startedPlayer,
     turnOrder,
+    difficulty,
     startedPlayer,
     result: { status: 'playing' },
   }

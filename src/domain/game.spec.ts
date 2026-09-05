@@ -8,6 +8,7 @@ const customState = (pieces: Piece[], overrides: Partial<GameState> = {}): GameS
   pieces,
   currentPlayer: 'human',
   turnOrder: 'human-first',
+  difficulty: 'easy',
   startedPlayer: 'human',
   positionCounts: {},
   result: { status: 'playing' },

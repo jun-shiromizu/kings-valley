@@ -28,9 +28,25 @@ const expectComOpeningMove = async (page: Page) => {
   expect(legalComOpeningDestinations[vacatedInitialCells[0]]).toContain(movedComPieceCells[0])
 }
 
-test('TOP-START-001 先手を選んで開始する', async ({ page }) => {
+test('TOP-START-001 easy は初期選択され、難易度をキーボードで選択できる', async ({ page }) => {
+  await page.goto('./')
+  const easy = page.getByRole('radio', { name: 'easy' })
+  const normal = page.getByRole('radio', { name: 'normal' })
+  const easyOption = page.locator('.difficulty-option').filter({ has: easy })
+
+  await expect(easy).toBeChecked()
+  await easy.focus()
+  await expect(easy).toBeFocused()
+  await expect(easyOption).toHaveCSS('outline-style', 'solid')
+  await page.keyboard.press('ArrowDown')
+  await expect(normal).toBeChecked()
+})
+
+test('TOP-START-002 先手と normal を選んで開始する', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('radio', { name: /先手/ }).check()
+  await page.getByRole('radio', { name: 'normal' }).check()
+  await expect(page.getByRole('radio', { name: 'normal' })).toBeChecked()
   await page.getByRole('button', { name: 'ゲームスタート' }).click()
 
   await expect(page).toHaveURL(/#\/game$/)
@@ -38,21 +54,25 @@ test('TOP-START-001 先手を選んで開始する', async ({ page }) => {
   await expect(page.getByText('あなたの手番')).toBeVisible()
 })
 
-test('TOP-START-002 後手を選んで開始すると COM が初手を指す', async ({ page }) => {
+test('TOP-START-003 後手と hard を選んで開始すると COM が初手を指す', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('radio', { name: /後手/ }).check()
+  await page.getByRole('radio', { name: 'hard' }).check()
+  await expect(page.getByRole('radio', { name: 'hard' })).toBeChecked()
   await page.getByRole('button', { name: 'ゲームスタート' }).click()
 
   await expect(page).toHaveURL(/#\/game$/)
   await expectComOpeningMove(page)
 })
 
-test('TOP-START-003 ランダム設定で COM 先手を固定すると COM が初手を指す', async ({ page }) => {
+test('TOP-START-004 ランダム設定で COM 先手を固定すると normal でも COM が初手を指す', async ({ page }) => {
   await page.addInitScript(() => {
     Math.random = () => 0.9
   })
   await page.goto('./')
   await page.getByRole('radio', { name: /ランダム/ }).check()
+  await page.getByRole('radio', { name: 'normal' }).check()
+  await expect(page.getByRole('radio', { name: 'normal' })).toBeChecked()
   await page.getByRole('button', { name: 'ゲームスタート' }).click()
 
   await expect(page).toHaveURL(/#\/game$/)

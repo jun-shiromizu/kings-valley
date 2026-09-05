@@ -1,6 +1,7 @@
 export type Player = 'human' | 'com'
 export type PieceType = 'king' | 'soldier'
 export type TurnOrder = 'human-first' | 'com-first' | 'random'
+export type Difficulty = 'easy' | 'normal' | 'hard'
 export type DirectionName = 'north' | 'northeast' | 'east' | 'southeast' | 'south' | 'southwest' | 'west' | 'northwest'
 
 export interface Position {
@@ -32,6 +33,7 @@ export interface GameState {
   pieces: Piece[]
   currentPlayer: Player
   turnOrder: TurnOrder
+  difficulty: Difficulty
   startedPlayer: Player
   positionCounts: Record<string, number>
   result: GameResult

@@ -1,6 +1,12 @@
 import { computed, onUnmounted, ref } from 'vue'
-import { advanceGame, chooseRandomMove, createInitialState, getLegalMovesForPiece, getLegalMovesForPlayer } from '../domain'
-import type { GameState, Move, Piece, TurnOrder } from '../domain'
+import {
+  advanceGame,
+  chooseRandomMove,
+  createInitialState,
+  getLegalMovesForPiece,
+  getLegalMovesForPlayer,
+} from '../domain'
+import type { Difficulty, GameState, Move, Piece, TurnOrder } from '../domain'
 
 const state = ref<GameState | null>(null)
 const selectedPieceId = ref<string | null>(null)
@@ -32,12 +38,17 @@ const scheduleComMove = () => {
   }, 500)
 }
 
-const start = (turnOrder: TurnOrder, random: () => number = Math.random) => {
+const start = (
+  turnOrder: TurnOrder,
+  difficultyOrRandom: Difficulty | (() => number) = 'easy',
+  random: () => number = Math.random,
+) => {
   clearComTimer()
   selectedPieceId.value = null
   isBusy.value = false
-  randomSource = random
-  state.value = createInitialState(turnOrder, randomSource)
+  const difficulty = typeof difficultyOrRandom === 'function' ? 'easy' : difficultyOrRandom
+  randomSource = typeof difficultyOrRandom === 'function' ? difficultyOrRandom : random
+  state.value = createInitialState(turnOrder, difficulty, randomSource)
   scheduleComMove()
 }
 
@@ -72,7 +83,7 @@ const moveSelectedPiece = (move: Move) => {
 
 const rematch = () => {
   if (!state.value) return
-  start(state.value.turnOrder, randomSource)
+  start(state.value.turnOrder, state.value.difficulty, randomSource)
 }
 
 const dispose = () => {
@@ -91,9 +102,13 @@ export const useGameSession = () => {
     if (!isBusy.value) scheduleComMove()
   }
 
-  const startSession = (turnOrder: TurnOrder, random: () => number = Math.random) => {
+  const startSession = (
+    turnOrder: TurnOrder,
+    difficultyOrRandom: Difficulty | (() => number) = 'easy',
+    random: () => number = Math.random,
+  ) => {
     sessionOwner = undefined
-    start(turnOrder, random)
+    start(turnOrder, difficultyOrRandom, random)
   }
 
   onUnmounted(() => {
@@ -126,4 +141,5 @@ export const clearSession = () => {
 }
 
 export const legalMovesForPiece = (piece: Piece) => (state.value ? getLegalMovesForPiece(state.value, piece) : [])
-export const legalMovesForCurrentPlayer = () => (state.value ? getLegalMovesForPlayer(state.value, state.value.currentPlayer) : [])
+export const legalMovesForCurrentPlayer = () =>
+  state.value ? getLegalMovesForPlayer(state.value, state.value.currentPlayer) : []
