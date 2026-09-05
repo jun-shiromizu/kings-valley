@@ -1,5 +1,5 @@
 import { computed, onUnmounted, ref } from 'vue'
-import { chooseRandomMove, createInitialState, getLegalMovesForPiece, getLegalMovesForPlayer, advanceGame } from '../domain'
+import { advanceGame, chooseRandomMove, createInitialState, getLegalMovesForPiece, getLegalMovesForPlayer } from '../domain'
 import type { GameState, Move, Piece, TurnOrder } from '../domain'
 
 const state = ref<GameState | null>(null)
@@ -7,6 +7,7 @@ const selectedPieceId = ref<string | null>(null)
 const isBusy = ref(false)
 let comTimer: ReturnType<typeof setTimeout> | undefined
 let randomSource = Math.random
+let sessionOwner: symbol | undefined
 
 const clearComTimer = () => {
   if (comTimer !== undefined) {
@@ -18,14 +19,16 @@ const clearComTimer = () => {
 const scheduleComMove = () => {
   clearComTimer()
   if (!state.value || state.value.result.status !== 'playing' || state.value.currentPlayer !== 'com') return
+
   isBusy.value = true
   comTimer = setTimeout(() => {
+    comTimer = undefined
+    isBusy.value = false
     if (!state.value || state.value.result.status !== 'playing' || state.value.currentPlayer !== 'com') return
-    const move = chooseRandomMove(state.value, 'com')
+
+    const move = chooseRandomMove(state.value, 'com', randomSource)
     if (move) state.value = advanceGame(state.value, move)
     else state.value = { ...state.value, result: { status: 'lost', winner: 'human', loser: 'com' } }
-    isBusy.value = false
-    comTimer = undefined
   }, 500)
 }
 
@@ -47,6 +50,7 @@ const selectPiece = (piece: Piece) => {
     piece.owner !== 'human'
   )
     return
+
   const legalMoves = getLegalMovesForPiece(state.value, piece)
   if (legalMoves.length === 0) return
   selectedPieceId.value = selectedPieceId.value === piece.id ? null : piece.id
@@ -71,17 +75,41 @@ const rematch = () => {
   start(state.value.turnOrder, randomSource)
 }
 
-const dispose = () => clearComTimer()
+const dispose = () => {
+  clearComTimer()
+  isBusy.value = false
+}
+
+const isGameRoute = () => window.location.hash === '#/game'
 
 export const useGameSession = () => {
-  onUnmounted(dispose)
+  const owner = Symbol('game-session-owner')
+  const ownsSession = isGameRoute()
+
+  if (ownsSession && state.value) {
+    sessionOwner = owner
+    if (!isBusy.value) scheduleComMove()
+  }
+
+  const startSession = (turnOrder: TurnOrder, random: () => number = Math.random) => {
+    sessionOwner = undefined
+    start(turnOrder, random)
+  }
+
+  onUnmounted(() => {
+    if (ownsSession && sessionOwner === owner) {
+      dispose()
+      sessionOwner = undefined
+    }
+  })
+
   return {
     state,
     selectedPiece,
     selectedPieceId,
     selectedMoves,
     isBusy,
-    start,
+    start: startSession,
     selectPiece,
     moveSelectedPiece,
     rematch,
@@ -91,10 +119,10 @@ export const useGameSession = () => {
 
 export const hasActiveSession = () => state.value !== null
 export const clearSession = () => {
-  clearComTimer()
+  dispose()
   state.value = null
   selectedPieceId.value = null
-  isBusy.value = false
+  sessionOwner = undefined
 }
 
 export const legalMovesForPiece = (piece: Piece) => (state.value ? getLegalMovesForPiece(state.value, piece) : [])
