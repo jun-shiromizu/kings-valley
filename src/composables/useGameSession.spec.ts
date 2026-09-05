@@ -27,8 +27,8 @@ const mountGameHost = () => {
 }
 
 const comPiecePositions = () =>
-  session.state.value!.pieces
-    .filter((piece) => piece.owner === 'com')
+  session.state
+    .value!.pieces.filter((piece) => piece.owner === 'com')
     .map((piece) => `${piece.id}:${piece.position.row}:${piece.position.col}`)
 
 const expectOneComPieceMoved = (initialState: GameState) => {
@@ -38,8 +38,7 @@ const expectOneComPieceMoved = (initialState: GameState) => {
 
     const initialPiece = initialState.pieces.find((candidate) => candidate.id === piece.id)
     return (
-      initialPiece !== undefined &&
-      (initialPiece.position.row !== piece.position.row || initialPiece.position.col !== piece.position.col)
+      initialPiece !== undefined && (initialPiece.position.row !== piece.position.row || initialPiece.position.col !== piece.position.col)
     )
   })
 
@@ -100,46 +99,40 @@ describe('useGameSession', () => {
     session.dispose()
   })
 
-  it(
-    'COM 先手ではタイマー後に COM の駒を1個だけ合法な位置へ動かしてプレイヤーへ手番を戻す',
-    async () => {
-      vi.useFakeTimers()
-      mount(Host)
+  it('COM 先手ではタイマー後に COM の駒を1個だけ合法な位置へ動かしてプレイヤーへ手番を戻す', async () => {
+    vi.useFakeTimers()
+    mount(Host)
 
-      session.start('com-first', () => 0)
-      const initialState = session.state.value!
+    session.start('com-first', () => 0)
+    const initialState = session.state.value!
 
-      expect(session.state.value?.currentPlayer).toBe('com')
-      expect(session.isBusy.value).toBe(true)
+    expect(session.state.value?.currentPlayer).toBe('com')
+    expect(session.isBusy.value).toBe(true)
 
-      vi.advanceTimersByTime(500)
-      await nextTick()
+    vi.advanceTimersByTime(500)
+    await nextTick()
 
-      expectOneComPieceMoved(initialState)
-      expect(session.state.value?.currentPlayer).toBe('human')
-      expect(session.isBusy.value).toBe(false)
-    },
-  )
+    expectOneComPieceMoved(initialState)
+    expect(session.state.value?.currentPlayer).toBe('human')
+    expect(session.isBusy.value).toBe(false)
+  })
 
-  it(
-    'ランダム設定で COM 先手を固定しても初手の COM 駒を1個だけ合法な位置へ動かす',
-    async () => {
-      vi.useFakeTimers()
-      mount(Host)
+  it('ランダム設定で COM 先手を固定しても初手の COM 駒を1個だけ合法な位置へ動かす', async () => {
+    vi.useFakeTimers()
+    mount(Host)
 
-      session.start('random', () => 0.9)
-      const initialState = session.state.value!
+    session.start('random', () => 0.9)
+    const initialState = session.state.value!
 
-      expect(session.state.value?.startedPlayer).toBe('com')
+    expect(session.state.value?.startedPlayer).toBe('com')
 
-      vi.advanceTimersByTime(500)
-      await nextTick()
+    vi.advanceTimersByTime(500)
+    await nextTick()
 
-      expectOneComPieceMoved(initialState)
-      expect(session.state.value?.currentPlayer).toBe('human')
-      expect(session.isBusy.value).toBe(false)
-    },
-  )
+    expectOneComPieceMoved(initialState)
+    expect(session.state.value?.currentPlayer).toBe('human')
+    expect(session.isBusy.value).toBe(false)
+  })
 
   it('開始画面の破棄後もゲーム画面が予約済み COM 着手を保持する', async () => {
     vi.useFakeTimers()

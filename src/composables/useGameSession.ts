@@ -1,11 +1,5 @@
 import { computed, onUnmounted, ref } from 'vue'
-import {
-  advanceGame,
-  chooseRandomMove,
-  createInitialState,
-  getLegalMovesForPiece,
-  getLegalMovesForPlayer,
-} from '../domain'
+import { advanceGame, chooseRandomMove, createInitialState, getLegalMovesForPiece, getLegalMovesForPlayer } from '../domain'
 import type { GameState, Move, Piece, TurnOrder } from '../domain'
 
 const state = ref<GameState | null>(null)
@@ -62,9 +56,7 @@ const selectPiece = (piece: Piece) => {
   selectedPieceId.value = selectedPieceId.value === piece.id ? null : piece.id
 }
 
-const selectedPiece = computed(
-  () => state.value?.pieces.find((piece) => piece.id === selectedPieceId.value) ?? null,
-)
+const selectedPiece = computed(() => state.value?.pieces.find((piece) => piece.id === selectedPieceId.value) ?? null)
 const selectedMoves = computed(() => {
   if (!state.value || !selectedPiece.value) return []
   return getLegalMovesForPiece(state.value, selectedPiece.value)
@@ -134,5 +126,4 @@ export const clearSession = () => {
 }
 
 export const legalMovesForPiece = (piece: Piece) => (state.value ? getLegalMovesForPiece(state.value, piece) : [])
-export const legalMovesForCurrentPlayer = () =>
-  state.value ? getLegalMovesForPlayer(state.value, state.value.currentPlayer) : []
+export const legalMovesForCurrentPlayer = () => (state.value ? getLegalMovesForPlayer(state.value, state.value.currentPlayer) : [])

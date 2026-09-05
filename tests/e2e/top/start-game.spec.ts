@@ -14,9 +14,9 @@ const expectComOpeningMove = async (page: Page) => {
   await expect(page.getByText('COM が先手')).toBeVisible()
   await expect(page.getByText('あなたの手番')).toBeVisible()
 
-  const comPieceCells = await page.locator('.piece--com').evaluateAll((pieces) =>
-    pieces.map((piece) => piece.parentElement?.getAttribute('aria-label') ?? ''),
-  )
+  const comPieceCells = await page
+    .locator('.piece--com')
+    .evaluateAll((pieces) => pieces.map((piece) => piece.parentElement?.getAttribute('aria-label') ?? ''))
   const occupiedInitialCells = comPieceCells.filter((cell) => initialComCells.includes(cell))
   const movedComPieceCells = comPieceCells.filter((cell) => !initialComCells.includes(cell))
   const vacatedInitialCells = initialComCells.filter((cell) => !comPieceCells.includes(cell))
@@ -47,17 +47,14 @@ test('TOP-START-002 後手を選んで開始すると COM が初手を指す', a
   await expectComOpeningMove(page)
 })
 
-test(
-  'TOP-START-003 ランダム設定で COM 先手を固定すると COM が初手を指す',
-  async ({ page }) => {
-    await page.addInitScript(() => {
-      Math.random = () => 0.9
-    })
-    await page.goto('./')
-    await page.getByRole('radio', { name: /ランダム/ }).check()
-    await page.getByRole('button', { name: 'ゲームスタート' }).click()
+test('TOP-START-003 ランダム設定で COM 先手を固定すると COM が初手を指す', async ({ page }) => {
+  await page.addInitScript(() => {
+    Math.random = () => 0.9
+  })
+  await page.goto('./')
+  await page.getByRole('radio', { name: /ランダム/ }).check()
+  await page.getByRole('button', { name: 'ゲームスタート' }).click()
 
-    await expect(page).toHaveURL(/#\/game$/)
-    await expectComOpeningMove(page)
-  },
-)
+  await expect(page).toHaveURL(/#\/game$/)
+  await expectComOpeningMove(page)
+})
