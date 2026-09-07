@@ -11,12 +11,15 @@ scenarios:
       - 対局状態が破棄される
 
   - id: ENDGAME-NAV-002
-    name: ゲーム画面から再戦する
-    precondition: 対局中のゲームページを表示している
+    name: 終局ダイアログから hard の設定を引き継いで再戦する
+    precondition: hard を選択して対局を開始し、終局ダイアログを表示している
     steps:
-      - action: もう一度遊ぶを選択する
+      - action: 終局ダイアログの「もう一度」を選択する
     expect:
+      - 終局ダイアログが閉じる
+      - hard の難易度が表示される
       - 初期盤面のゲームが表示される
+      - プレイヤーの手番と表示される
 
   - id: ENDGAME-STATE-001
     name: 再読み込みで対局を破棄する
