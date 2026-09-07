@@ -50,6 +50,7 @@ test('TOP-START-002 先手と normal を選んで開始する', async ({ page })
   await page.getByRole('button', { name: 'ゲームスタート' }).click()
 
   await expect(page).toHaveURL(/#\/game$/)
+  await expect(page.getByText('難易度 / normal')).toBeVisible()
   await expect(page.getByText('あなたが先手')).toBeVisible()
   await expect(page.getByText('あなたの手番')).toBeVisible()
 })
@@ -62,6 +63,7 @@ test('TOP-START-003 後手と hard を選んで開始すると COM が初手を�
   await page.getByRole('button', { name: 'ゲームスタート' }).click()
 
   await expect(page).toHaveURL(/#\/game$/)
+  await expect(page.getByText('難易度 / hard')).toBeVisible()
   await expectComOpeningMove(page)
 })
 
@@ -76,5 +78,6 @@ test('TOP-START-004 ランダム設定で COM 先手を固定すると normal �
   await page.getByRole('button', { name: 'ゲームスタート' }).click()
 
   await expect(page).toHaveURL(/#\/game$/)
+  await expect(page.getByText('難易度 / normal')).toBeVisible()
   await expectComOpeningMove(page)
 })

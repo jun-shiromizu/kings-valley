@@ -43,6 +43,18 @@ const playUntilResult = async (page: Page) => {
   await expect(dialog).toBeVisible()
 }
 
+const expectInitialBoard = async (page: Page) => {
+  const comPieceCells = await page
+    .locator('.piece--com')
+    .evaluateAll((pieces) => pieces.map((piece) => piece.parentElement?.getAttribute('aria-label') ?? ''))
+  const humanPieceCells = await page
+    .locator('.piece--human')
+    .evaluateAll((pieces) => pieces.map((piece) => piece.parentElement?.getAttribute('aria-label') ?? ''))
+
+  expect(comPieceCells).toEqual(['0行0列', '0行1列', '0行2列', '0行3列', '0行4列'])
+  expect(humanPieceCells).toEqual(['4行0列', '4行1列', '4行2列', '4行3列', '4行4列'])
+}
+
 test('ENDGAME-NAV-001 ゲーム画面からトップページへ戻る', async ({ page }) => {
   await startGame(page)
   await page.getByRole('button', { name: 'トップページへ戻る' }).click()
@@ -59,8 +71,11 @@ test('ENDGAME-NAV-002 終局ダイアログのもう一度で hard を設定し�
   await playUntilResult(page)
   await page.getByRole('button', { name: 'もう一度', exact: true }).click()
 
+  await expect(page.getByRole('dialog')).toBeHidden()
+  await expect(page.getByText('難易度 / hard')).toBeVisible()
   await expect(page.getByRole('grid', { name: '5 x 5 のゲーム盤' })).toBeVisible()
   await expect(page.getByText('あなたの手番')).toBeVisible()
+  await expectInitialBoard(page)
 })
 
 test('ENDGAME-STATE-001 再読み込みで対局を破棄する', async ({ page }) => {

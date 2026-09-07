@@ -1,32 +1,49 @@
-title: プレイヤーが手番順を選んで対局を開始する
-source: docs/product-requirements.md FR-01
+title: プレイヤーが手番順と難易度を選んで対局を開始する
+source: docs/product-requirements.md FR-01, 受け入れ基準 1-2, 13
 scenarios:
   - id: TOP-START-001
-    name: 先手を選んで開始する
+    name: easy を初期選択のままキーボードで確認する
+    precondition: トップページを表示している
+    steps:
+      - action: easy が初期選択されていることを確認する
+      - action: 難易度の選択肢へフォーカスする
+      - action: キーボードで次の難易度へ移動する
+    expect:
+      - easy が初期選択されている
+      - キーボード操作で normal を選択できる
+
+  - id: TOP-START-002
+    name: 先手と normal を選んで開始する
     precondition: トップページを表示している
     steps:
       - action: 先手を選択する
+      - action: normal を選択する
       - action: ゲームスタートを実行する
     expect:
       - ゲームページが表示される
-      - プレイヤーの手番と表示される
+      - normal の難易度が表示される
+      - プレイヤーが先手と表示される
 
-  - id: TOP-START-002
-    name: 後手を選んで開始する
+  - id: TOP-START-003
+    name: 後手と hard を選んで開始する
     precondition: トップページを表示している
     steps:
       - action: 後手を選択する
+      - action: hard を選択する
       - action: ゲームスタートを実行する
     expect:
       - ゲームページが表示される
+      - hard の難易度が表示される
       - COM が先手と表示される
 
-  - id: TOP-START-003
-    name: ランダム設定で有効な先手を生成する
+  - id: TOP-START-004
+    name: ランダム設定と normal を選んで開始する
     precondition: トップページを表示している
     steps:
       - action: ランダムを選択する
+      - action: normal を選択する
       - action: ゲームスタートを実行する
     expect:
       - ゲームページが表示される
+      - normal の難易度が表示される
       - プレイヤーまたは COM のどちらかが先手と表示される
