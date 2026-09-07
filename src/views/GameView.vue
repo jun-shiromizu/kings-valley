@@ -35,6 +35,7 @@ const toTop = async () => {
     <section class="game-layout" aria-labelledby="game-heading">
       <div class="game-copy">
         <p class="eyebrow">THE VALLEY / {{ state.startedPlayer === 'human' ? 'YOU FIRST' : 'COM FIRST' }}</p>
+        <p class="game-difficulty" aria-label="ゲーム難易度">難易度 / {{ state.difficulty }}</p>
         <h1 id="game-heading">中心へ<br /><em>滑り込め。</em></h1>
         <TurnStatus :state="state" :is-busy="session.isBusy.value" />
       </div>
