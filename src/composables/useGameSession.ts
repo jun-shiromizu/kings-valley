@@ -1,5 +1,12 @@
 import { computed, onUnmounted, ref } from 'vue'
-import { advanceGame, chooseRandomMove, createInitialState, getLegalMovesForPiece, getLegalMovesForPlayer } from '../domain'
+import {
+  advanceGame,
+  chooseRandomMove,
+  chooseTacticalMove,
+  createInitialState,
+  getLegalMovesForPiece,
+  getLegalMovesForPlayer,
+} from '../domain'
 import type { Difficulty, GameState, Move, Piece, TurnOrder } from '../domain'
 
 const state = ref<GameState | null>(null)
@@ -26,13 +33,20 @@ const scheduleComMove = () => {
     isBusy.value = false
     if (!state.value || state.value.result.status !== 'playing' || state.value.currentPlayer !== 'com') return
 
-    const move = chooseRandomMove(state.value, 'com', randomSource)
+    const move =
+      state.value.difficulty === 'easy'
+        ? chooseRandomMove(state.value, 'com', randomSource)
+        : chooseTacticalMove(state.value, 'com', randomSource)
     if (move) state.value = advanceGame(state.value, move)
     else state.value = { ...state.value, result: { status: 'lost', winner: 'human', loser: 'com' } }
   }, 500)
 }
 
-const start = (turnOrder: TurnOrder, difficultyOrRandom: Difficulty | (() => number) = 'easy', random: () => number = Math.random) => {
+const start = (
+  turnOrder: TurnOrder,
+  difficultyOrRandom: Difficulty | (() => number) = 'easy',
+  random: () => number = Math.random,
+) => {
   clearComTimer()
   selectedPieceId.value = null
   isBusy.value = false
